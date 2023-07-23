@@ -74,7 +74,7 @@ def index():
 
 def send_email(anomaly_details):
      sender_email = 'spraveen.961435@gmail.com'
-     sender_password = 'apyvzylhighcxsse'
+     sender_password = ''#password
      receiver_email = 'praveen.spk8247@gmail.com'
      smtp_server = 'smtp.gmail.com'
      smtp_port = 587
