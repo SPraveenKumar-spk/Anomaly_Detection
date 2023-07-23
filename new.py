@@ -2,7 +2,8 @@ from flask import Flask, render_template, request
 import joblib
 import smtplib
 import pandas as pd
-
+from sklearn.preprocessing import LabelEncoder
+encoder=LabelEncoder()
 app = Flask(__name__, template_folder='templates')
 model = joblib.load('fsm.pkl')
 @app.route('/', methods=['GET','POST'])
@@ -10,10 +11,31 @@ def index():
     if request.method=='POST':
         file=request.files['userfile']
         data=pd.read_csv(file)
+
+        col_names=['duration', 'protocol_type', 'service', 'flag', 'src_bytes', 'dst_bytes', 'land',
+        'wrong_fragment', 'urgent', 'hot', 'num_failed_logins', 'logged_in', 'num_compromised',
+        'root_shell', 'su_attempted', 'num_root', 'num_file_creations', 'num_shells',
+        'num_access_files', 'num_outbound_cmds', 'is_host_login', 'is_guest_login', 'count',
+        'srv_count', 'serror_rate', 'srv_serror_rate', 'rerror_rate', 'srv_rerror_rate',
+        'same_srv_rate', 'diff_srv_rate', 'srv_diff_host_rate', 'dst_host_count',
+        'dst_host_srv_count', 'dst_host_same_srv_rate', 'dst_host_diff_srv_rate',
+        'dst_host_same_src_port_rate', 'dst_host_srv_diff_host_rate', 'dst_host_serror_rate',
+        'dst_host_srv_serror_rate', 'dst_host_rerror_rate', 'dst_host_srv_rerror_rate']
+        data.columns=col_names
+        data['protocol_type'] = encoder.fit_transform(data['protocol_type'])
+        data['service'] = encoder.fit_transform(data['service'])
+        data['flag'] = encoder.fit_transform(data['flag'])
+        col_drop=['count','srv_count','serror_rate','dst_host_same_src_port_rate','dst_host_count']
+        data=data.drop(col_drop,axis=1)
+        col_drop1=['num_outbound_cmds','dst_host_serror_rate','dst_host_srv_serror_rate','wrong_fragment','srv_serror_rate']
+        data=data.drop(col_drop1,axis=1)
+        
         predictions = model.predict(data)
 
         anomaly_count = 0
+        normal_data=0
         anomaly_details = []
+        normal_details=[]
         encoding_mapping = {
             0: 'dos',
             1: 'normal',
@@ -26,41 +48,39 @@ def index():
         for i in range(len(y_Predictions)):
             if y_Predictions[i] != 'normal':
                 anomaly_count += 1
-                anomaly_features = " ".join( str(data.iloc[i]))
+                anomaly_features = " ".join(str(data.iloc[i]))
                 predicted_attack_type = str(y_Predictions[i])
 
-                print("Anomaly Detected!")
-                print("Anomaly Features:", anomaly_features)
-                print("Attack Type:", predicted_attack_type)
-
                 anomaly_details.append(str(anomaly_features) + "\nAttack Type: " + predicted_attack_type)
-            
+               
+                        
             elif y_Predictions[i] == 'normal':
-                anomaly_count += 1
+                normal_data += 1
                 features = " ".join( str(data.iloc[i]))
                 predicted = str(y_Predictions[i])
-                print("Safe!")
-                print("Features:", features)
-                print("Type:", predicted)
 
-                anomaly_details.append(str(features) + "\n Type: " + predicted)
+                normal_details.append(str(features) + "\n Type: " + predicted)
+       
             if anomaly_count >= 1:
                     send_email(anomaly_details)
                     break
-
+              
+                
         return render_template('result.html', anomaly_count=anomaly_count)
+
     else:
         return render_template('index.html')
+    
 
 def send_email(anomaly_details):
      sender_email = 'spraveen.961435@gmail.com'
-     sender_password = ''#password
+     sender_password = 'apyvzylhighcxsse'
      receiver_email = 'praveen.spk8247@gmail.com'
      smtp_server = 'smtp.gmail.com'
      smtp_port = 587
 
      subject = 'Anomalies Detected'
-     body = 'Anomalies have been detected. Here are the details:\n\n' + '\n\n'.join(anomaly_details)
+     body = '  **ALERT** \n\n Anomalies have been detected. Here are the details:\n\n' + '\n\n'.join(anomaly_details)
 
      message = f'Subject: {subject}\n\n{body}'
 
@@ -72,5 +92,8 @@ def send_email(anomaly_details):
             print('Email sent successfully.')
      except smtplib.SMTPException as e:
         print(f'Error sending email: {e}')
+
+    
+
 if __name__ == '__main__':
     app.run(debug=True)
