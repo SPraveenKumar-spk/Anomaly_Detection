@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, send_file
 import joblib
 import smtplib
 import pandas as pd
@@ -78,11 +78,24 @@ def index():
 
     else:
         return render_template('index.html')
+@app.route('/download', methods=['POST'])
+def download_csv():
+    # Assuming the CSV file is named 'data2.csv'
+    file_path = 'data2.csv'
+    
+    # Send the file to the user for download
+    response = send_file(file_path, as_attachment=True)
+
+    # Add a flash message to indicate that the CSV file is downloaded
+    
+    
+    return response
+
 
 
 def send_email(anomaly_details):
     sender_email = 'spraveen.961435@gmail.com'
-    sender_password = '' #password
+    sender_password = 'apyvzylhighcxsse' #password
     receiver_email = 'praveen.spk8247@gmail.com'
     smtp_server = 'smtp.gmail.com'
     smtp_port = 587
