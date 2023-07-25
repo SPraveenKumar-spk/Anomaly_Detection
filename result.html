@@ -6,6 +6,9 @@
 <body>
     <h1>Anomaly Detection Results</h1>
     <p>Anomalies Detected: {{ anomaly_count }}</p>
-    
+    <form action="{{ url_for('download_csv') }}" method="post">
+        <button type="submit">Download_CSV</button>
+    </form>
+   
 </body>
 </html>
