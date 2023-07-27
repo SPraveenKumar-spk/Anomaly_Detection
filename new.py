@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, send_file
 import joblib
 import smtplib
 import pandas as pd
+from datetime import datetime
 from sklearn.preprocessing import LabelEncoder
 
 encoder = LabelEncoder()
@@ -31,9 +32,7 @@ def index():
         data = data.drop(col_drop, axis=1)
         col_drop1 = ['num_outbound_cmds', 'dst_host_serror_rate', 'dst_host_srv_serror_rate', 'wrong_fragment', 'srv_serror_rate']
         data = data.drop(col_drop1, axis=1)
-        reduced = 100000
-        da = data.head(reduced)
-        predictions = model.predict(da)
+        predictions = model.predict(data)
 
         anomaly_count = 0
         normal_data = 0
@@ -66,10 +65,11 @@ def index():
         if anomaly_count >= 1:
             send_email(anomaly_details)
 
-        features = pd.DataFrame(features, columns=list(da.columns) + ['Attack'])
-
+        features = pd.DataFrame(features, columns=list(data.columns) + ['Attack'])
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        features['Time'] = timestamp
         
-        file_name = 'data2.csv'
+        file_name = 'data1.csv'
         features.to_csv(file_name, index=False)
 
         
@@ -78,17 +78,73 @@ def index():
 
     else:
         return render_template('index.html')
-@app.route('/download', methods=['POST'])
-def download_csv():
+@app.route('/preprocessed', methods=['GET', 'POST'])
+def preprocessed():
+    if request.method == 'POST':
+        file = request.files['userfile2']
+        data1 = pd.read_csv(file)
+     
+        predictions1 = model.predict(data1)
+
+        anomaly_count1 = 0
+        normal_data1 = 0
+        normal_details1 = []  
+        anomaly_details1 = []
+        features1 = []
+        encoding_mapping = {
+            0: 'dos',
+            1: 'normal',
+            2: 'probe',
+            3: 'r21',
+            4: 'u2r'
+        }
+        y_Predictions = [encoding_mapping[pred] for pred in predictions1]
+
+        for i in range(len(y_Predictions)):
+            if y_Predictions[i] != 'normal':
+                anomaly_count1 += 1
+                anomaly_features = " ".join(str(data1.iloc[i]))
+                predicted_attack_type = str(y_Predictions[i])
+
+                anomaly_details1.append(str(anomaly_features) + "\nAttack Type: " + predicted_attack_type)
+                row_data = list(data1.iloc[i]) + [predicted_attack_type]
+                features1.append(row_data)
+
+            elif y_Predictions[i] == 'normal':
+                normal_data1 += 1
+                row_data = list(data1.iloc[i]) + [str(y_Predictions[i])]
+                normal_details1.append(row_data)
+        if anomaly_count1 >= 1:
+            send_email(anomaly_details1)
+           
+        features1 = pd.DataFrame(features1, columns=list(data1.columns) + ['Attack'])
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        features1['Time'] = timestamp
+        
+        file_name = 'data2.csv'
+        features1.to_csv(file_name, index=False)
+
+        
+        print("Anomaly Count:", anomaly_count1)
+        return render_template('result1.html', anomaly_count1=anomaly_count1, features1=features1, normal_details1=normal_details1)
+
+    else:
+        return render_template('index.html')
+@app.route('/download_data1', methods=['POST'])
+def download_data1():
+    file_path = 'data1.csv'
+    response = send_file(file_path, as_attachment=True)   
+    return response
+@app.route('/download_data2', methods=['POST'])
+def download_data2():
     file_path = 'data2.csv'
     response = send_file(file_path, as_attachment=True)   
     return response
 
 
-
 def send_email(anomaly_details):
     sender_email = 'spraveen.961435@gmail.com'
-    sender_password = '' #password
+    sender_password = 'apyvzylhighcxsse' 
     receiver_email = 'praveen.spk8247@gmail.com'
     smtp_server = 'smtp.gmail.com'
     smtp_port = 587
