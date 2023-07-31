@@ -3,9 +3,10 @@ import joblib
 import smtplib
 import pandas as pd
 from datetime import datetime
-import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use('agg')
+import plotly.graph_objs as go
+import plotly.express as px
 from sklearn.preprocessing import LabelEncoder
 
 encoder = LabelEncoder()
@@ -67,6 +68,10 @@ def index():
                 timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 anomaly_timestamps.append(timestamp)  
                 anomaly_counts_over_time1.append(anomaly_count)
+            
+
+
+
                 features1 = pd.DataFrame([row_data], columns=list(da.columns) + ['Attack'])
                 features1['Time'] = timestamp
                 features.append(features1)
@@ -79,6 +84,26 @@ def index():
                 normal_data += 1
                 row_data = list(data.iloc[i]) + [str(y_Predictions[i])]
                 normal_details.append(row_data)
+        anomaly_timestamps_str = [str(ts) for ts in anomaly_timestamps]
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+        x=anomaly_timestamps_str,
+        y=anomaly_counts_over_time1,
+        mode='markers+lines',
+        marker=dict(size=8),
+        line=dict(shape='linear'),
+        name='Anomalies',))
+        fig.update_layout(
+        title='Anomalies Over Time',
+        xaxis_title='Time',
+        yaxis_title='Number of Anomalies',
+        xaxis_tickangle=-45,
+        showlegend=True,
+        autosize=True,)
+            
+
+        chart_file = '../anomalies_vs_time_chart.png'
+        fig.write_image(chart_file, format='png', width=1000, height=600)
         if anomaly_count >= 1:
             send_email(anomaly_details)
 
@@ -87,25 +112,14 @@ def index():
 
         
         print("Anomaly Count:", anomaly_count)
-        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        anomaly_timestamps.append(timestamp)  
-        anomaly_counts_over_time1.append(anomaly_count)
         def anomaly_chart():
-            plt.figure(figsize=(80, 40))
-            plt.plot(anomaly_timestamps, anomaly_counts_over_time1, marker='o')
-            plt.xlabel('Time ')
-            plt.ylabel('Number of Anomalies')
-            plt.title('Anomalies Over Time')
-            plt.xticks(rotation=45)
-            plt.tight_layout()
-            plt.show()
-
             chart_file = '../anomalies_vs_time_chart.png'
-            plt.savefig(chart_file)
+            fig.write_image(chart_file, format='png', width=1000, height=600)
 
-            return chart_file
+           
         chart_file_path = anomaly_chart()
-        return render_template('result.html', anomaly_count=anomaly_count, features=features, normal_details=normal_details,chart_file_path=chart_file_path )
+            
+        return render_template('result.html', anomaly_count=anomaly_count, features=features, normal_details=normal_details,chart_file_path=chart_file_path)
 
     else:
         return render_template('index.html')
@@ -114,14 +128,17 @@ def preprocessed():
     if request.method == 'POST':
         file = request.files['userfile2']
         data1 = pd.read_csv(file)
-     
-        predictions1 = model.predict(data1)
+        reduced1=8000
+        da1=data1.head(reduced1)
+        predictions1 = model.predict(da1)
 
         anomaly_count1 = 0
         normal_data1 = 0
         normal_details1 = []  
         anomaly_details1 = []
-        features1 = []
+        anomaly_counts_over_time=[]
+        features2 = []
+        anomaly_timestamps1=[]
         encoding_mapping = {
             0: 'dos',
             1: 'normal',
@@ -138,48 +155,61 @@ def preprocessed():
                 predicted_attack_type = str(y_Predictions[i])
 
                 anomaly_details1.append(str(anomaly_features) + "\nAttack Type: " + predicted_attack_type)
-                timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                
 
-                row_data = list(data1.iloc[i]) + [predicted_attack_type,timestamp]
-                features1.append(row_data)
+                row_data = list(data1.iloc[i]) + [predicted_attack_type]
+                timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                anomaly_timestamps1.append(timestamp) 
+                features3 = pd.DataFrame([row_data], columns=list(da1.columns) + ['Attack'])
+                features3['Time'] = timestamp
+
+                features2.append(features3)
+
+                anomaly_counts_over_time.append(anomaly_count1)
+
+                file_name = 'data2.csv'
+                final_features_df = pd.concat(features2, ignore_index=True)
+                final_features_df.to_csv(file_name, index=False)
 
             elif y_Predictions[i] == 'normal':
                 normal_data1 += 1
                 row_data = list(data1.iloc[i]) + [str(y_Predictions[i])]
                 normal_details1.append(row_data)
+        anomaly_timestamps_str1 = [str(ts) for ts in anomaly_timestamps1]
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+        x=anomaly_timestamps_str1,
+        y=anomaly_counts_over_time,
+        mode='markers+lines',
+        marker=dict(size=8),
+        line=dict(shape='linear'),
+        name='Anomalies',))
+        fig.update_layout(
+        title='Anomalies Over Time',
+        xaxis_title='Time',
+        yaxis_title='Number of Anomalies',
+        xaxis_tickangle=-45,
+        showlegend=True,
+        autosize=True,)
+            
+
+        chart_file = '../anomalies_vs_time_chart.png'
+        fig.write_image(chart_file, format='png', width=1000, height=600)
         if anomaly_count1 >= 1:
             send_email(anomaly_details1)
            
-        features1 = pd.DataFrame(features1, columns=list(data1.columns) + ['Attack', 'Time'])
-
        
-        file_name = 'data2.csv'
-        features1.to_csv(file_name, index=False)
-
         
         print("Anomaly Count:", anomaly_count1)
         anomaly_data = [(timestamp, anomaly_count1)]
         print(anomaly_data)
         def anomaly_chart():
-            timestamps = [data[0] for data in anomaly_data]
-            anomaly_counts = [data[1] for data in anomaly_data]
-        
-            plt.figure(figsize=(10, 6))
-            plt.plot(timestamps, anomaly_counts, color='blue', label='Anomalies')
-
-            plt.xlabel('Time')
-            plt.ylabel('Number of Anomalies')
-            plt.title('Anomalies vs. Time')
-            plt.grid(True)
-            plt.xticks(rotation=45)
-            plt.autoscale(enable=True, axis='both', tight=True)
-            plt.tight_layout()
             chart_file = '../anomalies_vs_time_chart.png'
-            plt.savefig(chart_file)
+            fig.write_image(chart_file, format='png', width=1000, height=600)
 
-            return chart_file
+           
         chart_file_path = anomaly_chart()
-        return render_template('result1.html', anomaly_count1=anomaly_count1, features1=features1, normal_details1=normal_details1,chart_file_path=chart_file_path)
+        return render_template('result1.html', anomaly_count1=anomaly_count1, features2=features2, normal_details1=normal_details1,chart_file_path=chart_file_path)
 
     else:
         return render_template('index.html')
@@ -200,7 +230,7 @@ def display_chart():
 
 def send_email(anomaly_details):
     sender_email = 'spraveen.961435@gmail.com'
-    sender_password = '' 
+    sender_password = 'apyvzylhighcxsse' 
     receiver_email = 'praveen.spk8247@gmail.com'
     smtp_server = 'smtp.gmail.com'
     smtp_port = 587
