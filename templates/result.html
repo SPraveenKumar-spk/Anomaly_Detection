@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Anomaly Detection Results</title>
+</head>
+<style>
+    div {
+        margin-bottom: 20px;
+    }
+</style>
+<body>
+    <h1>Anomaly Detection Results</h1>
+    <p>Anomalies Detected: {{ anomaly_count }}</p>
+    <div>
+        <form action="{{ url_for('download_data1') }}" method="post">
+            <button type="submit">Download data1.csv</button>
+        </form>
+    </div>
+</body>
+</html>
