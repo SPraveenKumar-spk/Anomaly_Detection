@@ -1,8 +1,8 @@
 # Network Communication Anomaly Detection
 
 Network Communication Anomaly Detection System is used to detect the abnormalities or anomalies present in the network. This system is developed using machine learning techniques. This is the prototype of network anomaliy detection system, in which it can be used for both processed data and un-processed data.
-This system can be implemented in smart industries to dectect the anomalies in the network connected systems like  PLC's(Programmable Logic Controller) etc. This is an useful tool as it detects the anomlies generated in a network which enhances the network
-Security, Integrity, Availability. This system 
+This system can be implemented in smart industries to dectect the anomalies in the network connected systems like  PLC's(Programmable Logic Controller) etc. This is an useful tool as it detects the anomlies generated in a network which enhances the network Security, Integrity, Availability. 
+
 # Dataset
 
 KDD - CUP dataset is used to implement it. The dataset includes various features extracted from the network traffic, such as protocol type, service, source and 
@@ -29,6 +29,7 @@ The deployment is done using flask (python framework) web app.
 
 # Outcomes
 
+** Anomaly Detection
 ** Email Notification;
 ** CSV file;
 ** Graph Visuals
