@@ -23,10 +23,6 @@ The "Network Communication Anomaly Detection " system is implemented using Rando
 the anomalies are found within a network it generates an email notification which includes details of anomaly type along with its features. 
 A csv file system is created in which it stores all the anomaly details like its type, features and time of generation. Additionally, Graph visualization system is developed in which it plots the line graph between time and no. of anomalies generated over that particular time.
 
-# Deployment
-
-The deployment is done using flask (python framework) web app. 
-
 # Outcomes
 
 ** Anomaly Detection
